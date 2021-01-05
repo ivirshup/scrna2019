@@ -9,7 +9,8 @@ output: html_document
 library(tidyverse)
 sp<-TRUE #save plots?
 fp<-file.path
-bp<-"./real_benchmarking"
+# bp<-"./real_benchmarking"
+bp = "."
 pth0<-fp(bp,"results/tables")
 if(!dir.exists(pth0)){
   dir.create(pth0,recursive=TRUE)
@@ -21,17 +22,19 @@ if(!dir.exists(pth)){
 ggs<-function(plt,w=6,h=4){
   if(sp){ ggsave(file=fp(pth,plt),width=w,height=h) }
 }
-#cbbPalette <- c("#000000", "#56B4E9", "#009E73", "#E69F00", "#D55E00", "#0072B2", "#CC79A7", "#F0E442")
+list.files("results")
 
-pd<-read.table(fp(bp,"results/cluster_accuracy.txt"),header=TRUE)
+#cbbPalette <- c("#000000", "#56B4E9", "#009E73", "#E69F00", "#D55E00", "#0072B2", "#CC79A7", "#F0E442")
+pd<-read.table(fp(bp,"results/cluster_accuracy_all.txt"),header=TRUE)
+# pd <- read.table(fp("./results/cluster_accuracy.txt"), header=T)
 pd$ktrue<-4
 pd$ktrue[pd$dat=="Zhengmix8eq"]<-8
 head(pd)
-pd$dimreduce<-factor(pd$dimreduce,levels=c("glmpca","pca_rd","pca_rp","zinbwave","pca_log"))
+pd$dimreduce<-factor(pd$dimreduce,levels=c("glmpca","pca_rd","pca_rp","zinbwave","pca_log", "pca_log_frac"))
 
 d0<-d<-subset(pd,method!="mclust" & k>=floor(.75*ktrue) & k<=ceiling(1.25*ktrue) & num_genes==1500 & genefilter!="expr")
 d$genefilter<-plyr::mapvalues(d$genefilter,from=c("hvg","dev"),to=c("Highly variable","Deviance"))
-d$dimreduce<-plyr::mapvalues(d$dimreduce,from=c("glmpca","pca_rd","pca_rp","zinbwave","pca_log"),to=c("GLM-PCA","Deviance residual PCA","Pearson residual PCA","ZINB-WAVE","Log-CPM PCA"))
+d$dimreduce<-plyr::mapvalues(d$dimreduce,from=c("glmpca","pca_rd","pca_rp","zinbwave","pca_log","pca_log_frac"),to=c("GLM-PCA","Deviance residual PCA","Pearson residual PCA","ZINB-WAVE","Log-CPM PCA", "Log-Frac PCA"))
 ```
 
 ari=adjusted rand index (high value= better concordance between learned clusters and ground truth cluster annotations)
@@ -79,7 +82,7 @@ ggs("benchmark_dimreduce.pdf")
 GLM-PCA and Log-CPM PCA showing Deviance vs HVG for Feature Selection
 
 ```{r}
-d2b<-subset(d2,dims=="10 dimensions" & dimreduce %in% c("GLM-PCA","Log-CPM PCA"))
+d2b<-subset(d2,dims=="10 dimensions" & dimreduce %in% c("GLM-PCA","Log-CPM PCA", "Log-Frac PCA"))
 d2b$genefilter<-factor(d2b$genefilter)
 d2b$genefilter<-plyr::mapvalues(d2b$genefilter,from="Highly variable",to="Highly variable genes")
 ggplot(d2b, aes(x=dimreduce,y=ari,fill=genefilter,colour=genefilter)) +geom_boxplot()+facet_wrap(~dat,scales="fixed",nrow=1) +theme_bw()+ylab("adjusted Rand index") +theme(legend.position="bottom", axis.title.x=element_blank())+labs(fill=NULL,color=NULL)#+labs(fill="feature selection",colour="feature selection")
@@ -89,7 +92,7 @@ ggs("benchmark_featselect.pdf",h=2.5)
 Kmeans only, compare feat select Deviance vs HVG and dimreduce GLM-PCA vs Log-CPM PCA.
 
 ```{r}
-d3<-subset(d, dat!="Zhengmix4uneq" & method=="kmeans" & dimreduce %in% c("Log-CPM PCA","GLM-PCA"))
+d3<-subset(d, dat!="Zhengmix4uneq" & method=="kmeans" & dimreduce %in% c("Log-CPM PCA","GLM-PCA", "Log-Frac PCA"))
 d3$dims<-plyr::mapvalues(d3$dims,from=c(10,30),to=c("10 dimensions","30 dimensions"))
 #d3$gfdr<-NA
 #d3$gfdr[d3$genefilter=="Deviance" & d3$dimreduce=="GLM-PCA"]<-"Dev. GLM-PCA"

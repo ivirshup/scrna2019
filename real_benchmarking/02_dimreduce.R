@@ -10,13 +10,15 @@ mkdir<-function(d){
   if(!dir.exists(d)) dir.create(d,recursive=TRUE)
 }
 
-dimreduce<-function(Y,dims,mth=c("pca_log","pca_rp","pca_rd","glmpca","zinbwave")){
+dimreduce<-function(Y,dims,mth=c("pca_log_frac","pca_log","pca_rp","pca_rd","glmpca","zinbwave")){
   #Y a count matrix with cells in the columns, genes in the rows
   mth<-match.arg(mth)
   Y<-rm_zero_rowcol(Y)
   sz<-colSums(Y)
   if(mth=="pca_log"){
     Y2<-log2(1+1e6*t(t(Y)/sz))
+  } else if(mth=="pca_log_frac") {
+    Y2<-log1p(t(t(Y)/sz))
   } else if(mth=="pca_rp") {
     Y2<-null_residuals(Y,type="pearson",mod="binomial")
   } else if(mth=="pca_rd") {
@@ -37,7 +39,7 @@ fils<-c("dev","expr","hvg")
 ep<-"./real_benchmarking/embeddings"
 dp<-"./real_benchmarking/data"
 
-master<-function(dat,fil,mths=c("pca_log","pca_rp","pca_rd","glmpca","zinbwave"),dims=c(10,30),genes=c(60,300,1500),verbose=TRUE){
+master<-function(dat,fil,mths=c("pca_log_frac","pca_rp","pca_rd","glmpca","zinbwave"),dims=c(10,30),genes=c(60,300,1500),verbose=TRUE){
   pth<-fp(ep,dat,fil)
   #mkdir(pth)
   sce<-readRDS(fp(dp,dat,paste0(fil,".rds")))
@@ -69,4 +71,4 @@ master<-function(dat,fil,mths=c("pca_log","pca_rp","pca_rd","glmpca","zinbwave")
 }
 
 atlas<-expand.grid(dats=dats,fils=fils)
-parallel::mcmapply(master,atlas$dats,atlas$fils,mc.cores=4)
+parallel::mcmapply(master,atlas$dats,atlas$fils, mths=c("pca_log_frac"), mc.cores=4)

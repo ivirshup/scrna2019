@@ -18,10 +18,14 @@ fils<-c("dev","expr","hvg")
 resolutions<-c(0.05,0.1,0.2,0.5,0.8,1.0,1.2,1.5,2.0)
 ks<-c(2,3,4,5,6,7,8,9,10)
 
+
 master<-function(dat,fil,mths=c("pca_log","pca_rp","pca_rd","glmpca","zinbwave"),dims=c(10,30),genes=c(1500,300,60),verbose=TRUE){
   #ipth<-fp(ep,dat,fil)
   #opth<-fp(cp,dat,fil)
   #mkdir(opth)
+  print(mths)
+  print(fil)
+  print(dat)
   is_pca<-grepl("^pca_",mths)
   for(G in genes){
     ipth<-fp(ep,dat,fil,paste0("G",G))
@@ -35,12 +39,15 @@ master<-function(dat,fil,mths=c("pca_log","pca_rp","pca_rd","glmpca","zinbwave")
         embed<-read.table(fname_in,row.names=1)
         km<-kmeans_cluster(embed,dims=dims,k=ks)
         mc<-mclust_cluster(embed,dims=dims[dims<=20],k=ks)
+        print(Sys.time())
         sc<-seurat_cluster(embed,dims=dims,res=resolutions)
+        print(Sys.time())
         ans<-rbind(km,mc,sc)
         write.table(ans,file=fname_out,quote=FALSE,row.names=FALSE)
       }
     }
     for(m in mths[!is_pca]){
+      print("Shouldn't happen")
       fname_out<-fp(opth,paste0(m,".txt"))
       if(!file.exists(fname_out)){
         if(verbose) print(fname_out)
@@ -63,4 +70,5 @@ master<-function(dat,fil,mths=c("pca_log","pca_rp","pca_rd","glmpca","zinbwave")
 }
 
 atlas<-expand.grid(dats=dats,fils=fils)
-parallel::mcmapply(master,atlas$dats,atlas$fils,mc.cores=4)
+# parallel::mcmapply(master,atlas$dats,atlas$fils, mths=c("pca_log_frac"), mc.cores=4)
+mapply(master,atlas$dats,atlas$fils, mths=c("pca_log_frac"))
